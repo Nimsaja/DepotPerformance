@@ -11,21 +11,20 @@ import (
 )
 
 var url = "http://markets.financialcontent.com/stocks/action/gethistoricaldata?Symbol="
+var euro float32
 
 func main() {
-	var v float64
+	euro = getClose(depot.Stock{Symbol: "USD-EUR", Count: 1})
+
+	var v float32
 	for _, s := range depot.Get() {
-		v = getClose(s.Symbol)
-		fmt.Printf("Price for %v in Dollar is %v \n", s.Name, v)
-
-		v = convertToEuro(v)
-		fmt.Printf("Price for %v in Euro is %v \n", s.Name, v)
-
+		v = getClose(s)
+		fmt.Printf("Value for %v in Euro is %v \n", s.Name, v*euro)
 	}
 }
 
-func getClose(s string) float64 {
-	resp, err := http.Get(url + s)
+func getClose(s depot.Stock) float32 {
+	resp, err := http.Get(url + s.Symbol)
 	if err != nil {
 		log.Printf("Error %v ", err)
 		return 0
@@ -38,17 +37,11 @@ func getClose(s string) float64 {
 	line, err := reader.Read()
 	line, err = reader.Read()
 
-	f, err := strconv.ParseFloat(line[5], 64)
+	f, err := strconv.ParseFloat(line[5], 32)
 	if err != nil {
 		log.Printf("Error %v ", err)
 		return 0
 	}
 
-	return f
-}
-
-func convertToEuro(v float64) float64 {
-	e := getClose("USD-EUR")
-
-	return v * e
+	return float32(f) * s.Count
 }

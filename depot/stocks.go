@@ -4,13 +4,13 @@ package depot
 type Stock struct {
 	Name   string
 	Symbol string
-	Count  int
+	Count  float32
 }
 
 //Get gets the portfolio
 func Get() []Stock {
 	return []Stock{
-		Stock{Name: "Google", Symbol: "GOOG", Count: 1},
-		Stock{Name: "Amazon", Symbol: "AMZN", Count: 2},
+		Stock{Name: "Google", Symbol: "GOOG", Count: 0.211},
+		Stock{Name: "Amazon", Symbol: "AMZN", Count: 0.056},
 	}
 }
