@@ -30,7 +30,8 @@ func main() {
 			//will be called after this func is done, no matter where
 			defer wg.Done()
 			v, d := getClose(s)
-			fmt.Printf("Value for %v on %v is %v Euro\n", s.Name, d, v*euro)
+			fmt.Printf("Value for %v on %v is %v Euro\n", s.Name, d,
+				depot.ConvertToEuro(s.ConvEuro, v, euro))
 		}(s)
 	}
 
@@ -39,7 +40,7 @@ func main() {
 	fmt.Println("Elapsed Time ", time.Now().Sub(start))
 }
 
-func getClose(s depot.Stock) (float32, string) {
+func getClose(s depot.Stock) (value float32, date string) {
 	// m := 8 //start month
 	sy := s.Symbol
 	r := 1 //how many month
