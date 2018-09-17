@@ -20,6 +20,7 @@ func main() {
 
 	euro, _ = getClose(depot.Stock{Symbol: "USD-EUR", Count: 1})
 
+	//to check for raceconditions -> go run -race main.go
 	//to check if every go routine is done
 	wg := sync.WaitGroup{}
 	//need to tell the wait group how many go routines we have
