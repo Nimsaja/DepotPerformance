@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/Nimsaja/DepotPerformance/depot"
 )
@@ -14,6 +15,8 @@ var url = "http://markets.financialcontent.com/stocks/action/gethistoricaldata?"
 var euro float32
 
 func main() {
+	start := time.Now()
+
 	euro, _ = getClose(depot.Stock{Symbol: "USD-EUR", Count: 1})
 
 	var v float32
@@ -22,6 +25,10 @@ func main() {
 		v, d = getClose(s)
 		fmt.Printf("Value for %v on %v is %v Euro\n", s.Name, d, v*euro)
 	}
+
+	end := time.Now()
+	elapsedTime := end.Sub(start)
+	fmt.Println("Elapsed Time ", elapsedTime)
 }
 
 func getClose(s depot.Stock) (float32, string) {
