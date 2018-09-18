@@ -30,8 +30,7 @@ func main() {
 			//will be called after this func is done, no matter where
 			defer wg.Done()
 			v, d := getClose(s)
-			fmt.Printf("Value for %v on %v is %v Euro\n", s.Name, d,
-				depot.ConvertToEuro(s.ConvEuro, v, euro))
+			fmt.Printf("Value for %v on %v is %v Euro\n", s.Name, d, s.AsEuro(v, euro))
 		}(s)
 	}
 
