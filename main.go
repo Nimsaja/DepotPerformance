@@ -13,29 +13,61 @@ import (
 )
 
 var url = "http://markets.financialcontent.com/stocks/action/gethistoricaldata?"
-var euro float32
 
 func main() {
 	start := time.Now()
 
-	euro, _ = getClose(depot.Stock{Symbol: "USD-EUR", Count: 1})
+	var euro float32
+	wgEuro := sync.WaitGroup{}
+	wgEuro.Add(1)
+
+	go func() {
+		euro, _ = getClose(depot.Stock{Symbol: "USD-EUR", Count: 1})
+		wgEuro.Done()
+	}()
 
 	//to check for raceconditions -> go run -race main.go
 	//to check if every go routine is done
 	wg := sync.WaitGroup{}
+
+	//need to create a new struct
+	type closureValues struct {
+		s depot.Stock
+		d string
+		v float32
+	}
+
+	var lenDepot = len(depot.Get())
+
+	//declaration of channel
+	ch := make(chan closureValues, lenDepot)
+
 	//need to tell the wait group how many go routines we have
-	wg.Add(len(depot.Get()))
+	wg.Add(lenDepot)
 	for _, s := range depot.Get() {
 		go func(s depot.Stock) {
 			//will be called after this func is done, no matter where
 			defer wg.Done()
+
+			//input to channel
 			v, d := getClose(s)
-			fmt.Printf("Value for %v on %v is %v Euro\n", s.Name, d, s.AsEuro(v, euro))
+			cV := closureValues{s: s, d: d, v: v}
+			ch <- cV
+
 		}(s)
 	}
 
 	//here we wait for all the go routines to be done
 	wg.Wait()
+
+	close(ch)
+
+	wgEuro.Wait()
+	//output of channel
+	for cV := range ch {
+		fmt.Printf("Value for %v on %v is %v Euro\n", cV.s.Name, cV.d, cV.s.AsEuro(cV.v, euro))
+	}
+
 	fmt.Println("Elapsed Time ", time.Now().Sub(start))
 }
 
