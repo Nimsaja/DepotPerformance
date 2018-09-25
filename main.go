@@ -1,24 +1,23 @@
 package main
 
 import (
-	"encoding/csv"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
-	"strconv"
 	"sync"
 	"time"
 
 	"github.com/Nimsaja/DepotPerformance/depot"
 )
 
-var url = "http://markets.financialcontent.com/stocks/action/gethistoricaldata?"
+var url = "https://query1.finance.yahoo.com/v7/finance/quote?lang=en-US&region=US&corsDomain=finance.yahoo.com&symbols="
 var euro float32
 
 func main() {
 	start := time.Now()
 
-	euro, _ = getClose(depot.Stock{Symbol: "USD-EUR", Count: 1})
+	// euro, _ = getQuote(depot.Stock{Symbol: "USD-EUR", Count: 1})
 
 	//to check for raceconditions -> go run -race main.go
 	//to check if every go routine is done
@@ -29,8 +28,8 @@ func main() {
 		go func(s depot.Stock) {
 			//will be called after this func is done, no matter where
 			defer wg.Done()
-			v, d := getClose(s)
-			fmt.Printf("Value for %v on %v is %v Euro\n", s.Name, d, s.AsEuro(v, euro))
+			v := getQuote(s)
+			fmt.Printf("Value for %v is %v\n", s.Name, v)
 		}(s)
 	}
 
@@ -39,52 +38,30 @@ func main() {
 	fmt.Println("Elapsed Time ", time.Now().Sub(start))
 }
 
-func getClose(s depot.Stock) (value float32, date string) {
-	// m := 8 //start month
-	sy := s.Symbol
-	r := 1 //how many month
-	y := 2018
-
-	// u := fmt.Sprintf(url+"Month=%v&Symbol=%v&Range=%v&Year=%v", m, sy, r, y)
-	u := fmt.Sprintf(url+"Symbol=%v&Range=%v&Year=%v", sy, r, y)
+func getQuote(s depot.Stock) (value float32) {
+	u := fmt.Sprintf(url+"%v", s.Symbol)
 
 	resp, err := http.Get(u)
 	if err != nil {
 		log.Printf("Error %v ", err)
-		return 0, ""
+		return 0
 	}
 	defer resp.Body.Close()
 
-	// var lineCount = 0
-	reader := csv.NewReader(resp.Body)
-
-	// for {
-	// 	record, err := reader.Read()
-	// 	// end-of-file is fitted into err
-	// 	if err == io.EOF {
-	// 		break
-	// 	} else if err != nil {
-	// 		fmt.Println("Error:", err)
-	// 		return 0
-	// 	}
-	// 	fmt.Println(lineCount, " -> ", record)
-	// 	lineCount++
-	// }
-
-	//skip first line
-	line, err := reader.Read()
-	line, err = reader.Read()
-
-	if len(line) < 5 {
-		log.Println("Can not find stock values for ", s.Name)
-		return 0, ""
-	}
-
-	f, err := strconv.ParseFloat(line[5], 32)
+	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Printf("Error %v ", err)
-		return 0, ""
+		log.Printf("Error reading body: %v", err)
+		return 0
 	}
 
-	return float32(f) * s.Count, line[1]
+	n := len(body)
+	txt := string(body[:n])
+
+	fmt.Println("Result for ", s.Name, "is ", txt)
+
+	// result := json.NewDecoder(body)
+
+	// fmt.Println("Result for ", s.Name, "is ", result)
+
+	return 107
 }
