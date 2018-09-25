@@ -6,6 +6,8 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"sync"
+	"time"
 
 	"github.com/Nimsaja/DepotPerformance/depot"
 )
@@ -14,17 +16,30 @@ var url = "http://markets.financialcontent.com/stocks/action/gethistoricaldata?"
 var euro float32
 
 func main() {
+	start := time.Now()
+
 	euro, _ = getClose(depot.Stock{Symbol: "USD-EUR", Count: 1})
 
-	var v float32
-	var d string
+	//to check for raceconditions -> go run -race main.go
+	//to check if every go routine is done
+	wg := sync.WaitGroup{}
+	//need to tell the wait group how many go routines we have
+	wg.Add(len(depot.Get()))
 	for _, s := range depot.Get() {
-		v, d = getClose(s)
-		fmt.Printf("Value for %v on %v is %v Euro\n", s.Name, d, v*euro)
+		go func(s depot.Stock) {
+			//will be called after this func is done, no matter where
+			defer wg.Done()
+			v, d := getClose(s)
+			fmt.Printf("Value for %v on %v is %v Euro\n", s.Name, d, s.AsEuro(v, euro))
+		}(s)
 	}
+
+	//here we wait for all the go routines to be done
+	wg.Wait()
+	fmt.Println("Elapsed Time ", time.Now().Sub(start))
 }
 
-func getClose(s depot.Stock) (float32, string) {
+func getClose(s depot.Stock) (value float32, date string) {
 	// m := 8 //start month
 	sy := s.Symbol
 	r := 1 //how many month
