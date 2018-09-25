@@ -75,6 +75,11 @@ func getClose(s depot.Stock) (value float32, date string) {
 	line, err := reader.Read()
 	line, err = reader.Read()
 
+	if len(line) < 5 {
+		log.Println("Can not find stock values for ", s.Name)
+		return 0, ""
+	}
+
 	f, err := strconv.ParseFloat(line[5], 32)
 	if err != nil {
 		log.Printf("Error %v ", err)
