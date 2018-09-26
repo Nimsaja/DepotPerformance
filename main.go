@@ -69,9 +69,11 @@ func createGraph() {
 
 	defer f.Close()
 
-	a := make([]float32, 0)
+	ax := make([]int, 0)
+	ay := make([]float32, 0)
 	var s []string
 	var v float64
+	nb := 0
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		b := scanner.Text()
@@ -85,10 +87,21 @@ func createGraph() {
 
 		fmt.Println(v)
 
-		a = append(a, float32(v))
+		t, err := strconv.Atoi(s[0])
+		if err != nil {
+			fmt.Println("Error parsing time ", err)
+		}
+		fmt.Println("Time: ", t)
+
+		ax = append(ax, t)
+		ay = append(ay, float32(v))
+
+		nb++
 	}
 
 	//create plot
+	xticks := plot.TimeTicks{Format: "2006-01-02"}
+
 	p, err := plot.New()
 	if err != nil {
 		panic(err)
@@ -97,10 +110,11 @@ func createGraph() {
 	p.Title.Text = "My Depot Performance"
 	p.X.Label.Text = "Date"
 	p.Y.Label.Text = "Value"
+	p.X.Tick.Marker = xticks
 
-	pts := make(plotter.XYs, len(a))
-	for i, v := range a {
-		pts[i].X = float64(i)
+	pts := make(plotter.XYs, len(ay))
+	for i, v := range ay {
+		pts[i].X = float64(ax[i])
 		pts[i].Y = float64(v)
 	}
 
@@ -109,8 +123,11 @@ func createGraph() {
 		panic(err)
 	}
 
+	//create x Axis
+	fmt.Println(ax)
+
 	// Save the plot to a PNG file.
-	if err := p.Save(4*vg.Inch, 4*vg.Inch, "DepotPerformance.png"); err != nil {
+	if err := p.Save(10*vg.Inch, 4*vg.Inch, "DepotPerformance.png"); err != nil {
 		panic(err)
 	}
 
@@ -142,12 +159,12 @@ func store() {
 		for i := 30; i > 0; i-- {
 			t = date.Add(time.Duration(-i) * time.Hour * 24)
 			n = (rand.Float64() * 500) + 3000
-			s = fmt.Sprintf("%v, %v", t.Format("2006-01-02"), n)
+			s = fmt.Sprintf("%v, %v", t.Unix(), n)
 			fmt.Fprintln(f, s)
 		}
 	}
 
-	s = fmt.Sprintf("%v, %v", date.Format("2006-01-02"), sum(quotes))
+	s = fmt.Sprintf("%v, %v", date.Unix(), sum(quotes))
 	fmt.Fprintln(f, s)
 }
 
