@@ -14,14 +14,11 @@ import (
 )
 
 var url = "https://query1.finance.yahoo.com/v7/finance/quote?lang=en-US&region=US&corsDomain=finance.yahoo.com&symbols="
-var histURL = "https://query1.finance.yahoo.com/v7/finance/spark?symbols="
-var histURLArgs = "&range=1mo&interval=1d"
 var euro float32
 
 func main() {
 	quotesYesterday := make([]float32, 0)
 	quotesToday := make([]float32, 0)
-	quotesHist := make([]yahoo.Data, 0)
 
 	start := time.Now()
 
@@ -41,11 +38,6 @@ func main() {
 			//Want to sum here - race condition?!?
 			quotesYesterday = append(quotesYesterday, v.Close*s.Count)
 			quotesToday = append(quotesToday, v.Price*s.Count)
-
-			vh := getHistQuote(s)
-
-			q := yahoo.Data{S: s, TV: yahoo.CreateTimeToValueMap(vh.Resp[0].T, vh.Resp[0].I.Q[0].V)}
-			quotesHist = append(quotesHist, q)
 		}(s)
 	}
 
@@ -56,17 +48,6 @@ func main() {
 	//actual data
 	fmt.Println("Depot yesterday ", sum(quotesYesterday), " / Depot today ", sum(quotesToday))
 	fmt.Println("-> Diff ", sum(quotesToday)-sum(quotesYesterday))
-
-	//historical data
-	fmt.Println("\n***********HistoricalData Rearranged****************")
-	m := yahoo.CreateValuesOnDateMap(quotesHist)
-	for k, sv := range m {
-		fmt.Print(k, ": ")
-		for _, v := range sv {
-			fmt.Print("[", v.St.Name, ": ", v.Value, "]")
-		}
-		fmt.Println()
-	}
 }
 
 func sum(input []float32) float32 {
@@ -111,42 +92,6 @@ func getQuote(s depot.Stock) (result yahoo.Result) {
 
 	if len(out.QR.Res) > 0 {
 		res = out.QR.Res[0]
-	}
-
-	return res
-}
-
-func getHistQuote(s depot.Stock) (result yahoo.HistResult) {
-	res := yahoo.HistResult{}
-
-	u := fmt.Sprintf(histURL+"%v"+histURLArgs, s.Symbol)
-
-	resp, err := http.Get(u)
-	if err != nil {
-		log.Printf("Error %v ", err)
-		return res
-	}
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Printf("Error reading body: %v", err)
-		return res
-	}
-
-	// n := len(body)
-	// txt := string(body[:n])
-	// fmt.Println("Result for ", s.Name, "is ", txt)
-
-	out := yahoo.Spark{}
-	err = json.Unmarshal(body, &out)
-	if err != nil {
-		log.Println(err.Error())
-		return
-	}
-
-	if len(out.SP.Res) > 0 {
-		res = out.SP.Res[0]
 	}
 
 	return res

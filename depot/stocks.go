@@ -15,9 +15,9 @@ func Get() []Stock {
 		Stock{Name: "Netflix", Symbol: "NFC.DE", Count: 2},
 		Stock{Name: "Siemens", Symbol: "SIE.DE", Count: 5},
 		Stock{Name: "XING", Symbol: "O1BC.SG", Count: 2},
-		Stock{Name: "Biotech", Symbol: "DWWD.BE", Count: 3},
+		Stock{Name: "Biotech", Symbol: "DWWD.F", Count: 3},
 		Stock{Name: "Auto&Robotic", Symbol: "2B76.F", Count: 33},
 		Stock{Name: "TecDax", Symbol: "EXS2.F", Count: 10},
-		Stock{Name: "Oekoworld", Symbol: "OE7A.MU", Count: 0.523},
+		Stock{Name: "Oekoworld", Symbol: "OE7A.F", Count: 0.523},
 	}
 }
