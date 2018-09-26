@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -15,10 +17,12 @@ import (
 
 var url = "https://query1.finance.yahoo.com/v7/finance/quote?lang=en-US&region=US&corsDomain=finance.yahoo.com&symbols="
 var euro float32
+var quotes []float32
+var date time.Time
+var path = "stocksData.txt"
 
 func main() {
-	quotesYesterday := make([]float32, 0)
-	quotesToday := make([]float32, 0)
+	quotes = make([]float32, 0)
 
 	start := time.Now()
 
@@ -36,8 +40,8 @@ func main() {
 			// fmt.Printf("Result for %v is %v\n", s.Name, v)
 
 			//Want to sum here - race condition?!?
-			quotesYesterday = append(quotesYesterday, v.Close*s.Count)
-			quotesToday = append(quotesToday, v.Price*s.Count)
+			quotes = append(quotes, v.Close*s.Count)
+			date = time.Unix(v.Time, 0)
 		}(s)
 	}
 
@@ -45,9 +49,42 @@ func main() {
 	wg.Wait()
 	fmt.Println("Elapsed Time ", time.Now().Sub(start))
 
-	//actual data
-	fmt.Println("Depot yesterday ", sum(quotesYesterday), " / Depot today ", sum(quotesToday))
-	fmt.Println("-> Diff ", sum(quotesToday)-sum(quotesYesterday))
+	store()
+	// createGraph()
+}
+
+func store() {
+	dummy := false
+	var s string
+
+	//create some dummy values if file does not exists
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		dummy = true
+	}
+
+	//append to output file
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+	if err != nil {
+		log.Printf("Error %s ", err)
+		panic(err)
+	}
+
+	defer f.Close()
+
+	//TODO remove this later!!!!!!
+	var t time.Time
+	var n float64
+	if dummy {
+		for i := 30; i > 0; i-- {
+			t = date.Add(time.Duration(-i) * time.Hour * 24)
+			n = (rand.Float64() * 500) + 3000
+			s = fmt.Sprintf("%v, %v", t.Format("2006-01-02"), n)
+			fmt.Fprintln(f, s)
+		}
+	}
+
+	s = fmt.Sprintf("%v, %v", date.Format("2006-01-02"), sum(quotes))
+	fmt.Fprintln(f, s)
 }
 
 func sum(input []float32) float32 {
