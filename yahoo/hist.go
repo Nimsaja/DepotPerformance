@@ -1,5 +1,11 @@
 package yahoo
 
+import (
+	"time"
+
+	"github.com/Nimsaja/DepotPerformance/depot"
+)
+
 // Spark ...
 type Spark struct {
 	SP HistOutput `json:"spark"`
@@ -32,6 +38,25 @@ type Indicators struct {
 // Quote ...
 type Quote struct {
 	V []float32 `json:"close"`
+}
+
+// Data this is the data we will use in this code
+type Data struct {
+	S  depot.Stock
+	TV map[time.Time]float32
+}
+
+// CreateTimeToValueMap ...
+func CreateTimeToValueMap(timestamps []int, values []float32) map[time.Time]float32 {
+	var m = make(map[time.Time]float32)
+
+	var t time.Time
+	for i := 0; i < len(values); i++ {
+		t = time.Unix(int64(timestamps[i]), 0)
+		m[t] = values[i]
+	}
+
+	return m
 }
 
 /** Output from yahoo as reference

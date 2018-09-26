@@ -21,6 +21,7 @@ var euro float32
 func main() {
 	quotesYesterday := make([]float32, 0)
 	quotesToday := make([]float32, 0)
+	quotesHist := make([]yahoo.Data, 0)
 
 	start := time.Now()
 
@@ -34,18 +35,17 @@ func main() {
 			//will be called after this func is done, no matter where
 			defer wg.Done()
 			v := getQuote(s)
-			vh := getHistQuote(s)
+
 			// fmt.Printf("Result for %v is %v\n", s.Name, v)
-
-			fmt.Println("\nHistorical Datas for ", s.Name)
-
-			for i := 0; i < len(vh.Resp[0].T); i++ {
-				fmt.Printf("%v -> %v\n", time.Unix(int64(vh.Resp[0].T[i]), 0), vh.Resp[0].I.Q[0].V[i])
-			}
 
 			//Want to sum here - race condition?!?
 			quotesYesterday = append(quotesYesterday, v.Close*s.Count)
 			quotesToday = append(quotesToday, v.Price*s.Count)
+
+			vh := getHistQuote(s)
+
+			q := yahoo.Data{S: s, TV: yahoo.CreateTimeToValueMap(vh.Resp[0].T, vh.Resp[0].I.Q[0].V)}
+			quotesHist = append(quotesHist, q)
 		}(s)
 	}
 
@@ -53,8 +53,19 @@ func main() {
 	wg.Wait()
 	fmt.Println("Elapsed Time ", time.Now().Sub(start))
 
+	//actual data
 	fmt.Println("Depot yesterday ", sum(quotesYesterday), " / Depot today ", sum(quotesToday))
 	fmt.Println("-> Diff ", sum(quotesToday)-sum(quotesYesterday))
+
+	//historical data
+	fmt.Println("\n***********HistoricalData****************")
+	for _, q := range quotesHist {
+		fmt.Println("\n", q.S.Name, ": ")
+		for k, v := range q.TV {
+			fmt.Println(k, " -> ", v)
+		}
+	}
+
 }
 
 func sum(input []float32) float32 {
