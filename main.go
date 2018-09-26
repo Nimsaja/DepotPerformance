@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -8,11 +9,17 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/Nimsaja/DepotPerformance/depot"
 	"github.com/Nimsaja/DepotPerformance/yahoo"
+	"gonum.org/v1/plot"
+	"gonum.org/v1/plot/plotter"
+	"gonum.org/v1/plot/plotutil"
+	"gonum.org/v1/plot/vg"
 )
 
 var url = "https://query1.finance.yahoo.com/v7/finance/quote?lang=en-US&region=US&corsDomain=finance.yahoo.com&symbols="
@@ -50,7 +57,64 @@ func main() {
 	fmt.Println("Elapsed Time ", time.Now().Sub(start))
 
 	store()
-	// createGraph()
+	createGraph()
+}
+
+func createGraph() {
+	//read in file
+	f, err := os.OpenFile(path, os.O_RDONLY, 0600)
+	if err != nil {
+		panic(err)
+	}
+
+	defer f.Close()
+
+	a := make([]float32, 0)
+	var s []string
+	var v float64
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		b := scanner.Text()
+		fmt.Println(b)
+
+		s = strings.Split(b, ", ")
+		v, err = strconv.ParseFloat(s[1], 32)
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Println(v)
+
+		a = append(a, float32(v))
+	}
+
+	//create plot
+	p, err := plot.New()
+	if err != nil {
+		panic(err)
+	}
+
+	p.Title.Text = "My Depot Performance"
+	p.X.Label.Text = "Date"
+	p.Y.Label.Text = "Value"
+
+	pts := make(plotter.XYs, len(a))
+	for i, v := range a {
+		pts[i].X = float64(i)
+		pts[i].Y = float64(v)
+	}
+
+	err = plotutil.AddLinePoints(p, pts)
+	if err != nil {
+		panic(err)
+	}
+
+	// Save the plot to a PNG file.
+	if err := p.Save(4*vg.Inch, 4*vg.Inch, "DepotPerformance.png"); err != nil {
+		panic(err)
+	}
+
+	fmt.Println("\n*****Please open DepotPerformance.png********")
 }
 
 func store() {
