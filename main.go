@@ -58,14 +58,15 @@ func main() {
 	fmt.Println("-> Diff ", sum(quotesToday)-sum(quotesYesterday))
 
 	//historical data
-	fmt.Println("\n***********HistoricalData****************")
-	for _, q := range quotesHist {
-		fmt.Println("\n", q.S.Name, ": ")
-		for k, v := range q.TV {
-			fmt.Println(k, " -> ", v)
+	fmt.Println("\n***********HistoricalData Rearranged****************")
+	m := yahoo.CreateValuesOnDateMap(quotesHist)
+	for k, sv := range m {
+		fmt.Print(k, ": ")
+		for _, v := range sv {
+			fmt.Print("[", v.St.Name, ": ", v.Value, "]")
 		}
+		fmt.Println()
 	}
-
 }
 
 func sum(input []float32) float32 {

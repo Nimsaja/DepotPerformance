@@ -46,6 +46,13 @@ type Data struct {
 	TV map[time.Time]float32
 }
 
+// StockValue rearrange Data struct to have all values for one date in a hashmap
+type StockValue struct {
+	Date  time.Time
+	St    depot.Stock
+	Value float32
+}
+
 // CreateTimeToValueMap ...
 func CreateTimeToValueMap(timestamps []int, values []float32) map[time.Time]float32 {
 	var m = make(map[time.Time]float32)
@@ -54,6 +61,33 @@ func CreateTimeToValueMap(timestamps []int, values []float32) map[time.Time]floa
 	for i := 0; i < len(values); i++ {
 		t = time.Unix(int64(timestamps[i]), 0)
 		m[t] = values[i]
+	}
+
+	return m
+}
+
+// CreateValuesOnDateMap ...
+func CreateValuesOnDateMap(data []Data) map[string][]StockValue {
+	var m = make(map[string][]StockValue)
+
+	var k string
+	var exists bool
+	var l []StockValue
+	for _, d := range data {
+		for t, v := range d.TV {
+			//create key
+			k = t.Format("2006-01-02")
+
+			_, exists = m[k]
+			//create new StockValueList
+			if !exists {
+				l = make([]StockValue, 0)
+				m[k] = l
+			}
+
+			//append new StockValue
+			m[k] = append(m[k], StockValue{t, d.S, v})
+		}
 	}
 
 	return m
