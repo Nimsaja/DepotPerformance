@@ -14,6 +14,8 @@ import (
 )
 
 var url = "https://query1.finance.yahoo.com/v7/finance/quote?lang=en-US&region=US&corsDomain=finance.yahoo.com&symbols="
+var histURL = "https://query1.finance.yahoo.com/v7/finance/spark?symbols="
+var histURLArgs = "&range=1mo&interval=1d"
 var euro float32
 
 func main() {
@@ -32,8 +34,16 @@ func main() {
 			//will be called after this func is done, no matter where
 			defer wg.Done()
 			v := getQuote(s)
-			fmt.Printf("Result for %v is %v\n", s.Name, v)
+			vh := getHistQuote(s)
+			// fmt.Printf("Result for %v is %v\n", s.Name, v)
 
+			fmt.Println("\nHistorical Datas for ", s.Name)
+
+			for i := 0; i < len(vh.Resp[0].T); i++ {
+				fmt.Printf("%v -> %v\n", time.Unix(int64(vh.Resp[0].T[i]), 0), vh.Resp[0].I.Q[0].V[i])
+			}
+
+			//Want to sum here - race condition?!?
 			quotesYesterday = append(quotesYesterday, v.Close*s.Count)
 			quotesToday = append(quotesToday, v.Price*s.Count)
 		}(s)
@@ -89,6 +99,42 @@ func getQuote(s depot.Stock) (result yahoo.Result) {
 
 	if len(out.QR.Res) > 0 {
 		res = out.QR.Res[0]
+	}
+
+	return res
+}
+
+func getHistQuote(s depot.Stock) (result yahoo.HistResult) {
+	res := yahoo.HistResult{}
+
+	u := fmt.Sprintf(histURL+"%v"+histURLArgs, s.Symbol)
+
+	resp, err := http.Get(u)
+	if err != nil {
+		log.Printf("Error %v ", err)
+		return res
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("Error reading body: %v", err)
+		return res
+	}
+
+	// n := len(body)
+	// txt := string(body[:n])
+	// fmt.Println("Result for ", s.Name, "is ", txt)
+
+	out := yahoo.Spark{}
+	err = json.Unmarshal(body, &out)
+	if err != nil {
+		log.Println(err.Error())
+		return
+	}
+
+	if len(out.SP.Res) > 0 {
+		res = out.SP.Res[0]
 	}
 
 	return res
