@@ -22,8 +22,6 @@ import (
 )
 
 var url = "https://query1.finance.yahoo.com/v7/finance/quote?lang=en-US&region=US&corsDomain=finance.yahoo.com&symbols="
-var euro float32
-var date time.Time
 var path = "stocksData.txt"
 
 func main() {
@@ -44,8 +42,6 @@ func main() {
 
 			v := getQuote(s)
 			quotesChan <- v.Close * s.Count
-
-			date = time.Unix(v.Time, 0)
 		}(s)
 	}
 
@@ -72,29 +68,30 @@ func createGraph() {
 	ay := make([]float32, 0)
 	var s []string
 	var v float64
-	nb := 0
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		b := scanner.Text()
 		s = strings.Split(b, ", ")
-		v, err = strconv.ParseFloat(s[1], 32)
-		if err != nil {
-			panic(err)
-		}
 
+		//get time
 		t, err := strconv.Atoi(s[0])
 		if err != nil {
 			fmt.Println("Error parsing time ", err)
 		}
 
 		ax = append(ax, t)
-		ay = append(ay, float32(v))
 
-		nb++
+		//get value
+		v, err = strconv.ParseFloat(s[1], 32)
+		if err != nil {
+			panic(err)
+		}
+
+		ay = append(ay, float32(v))
 	}
 
 	//create plot
-	xticks := plot.TimeTicks{Format: "2006-01-02"}
+	xticks := plot.TimeTicks{Format: "2006-01-02\n15:04"}
 
 	p, err := plot.New()
 	if err != nil {
@@ -140,7 +137,9 @@ func store(ch chan float32) {
 	for v := range ch {
 		sum += v
 	}
-	s := fmt.Sprintf("%v, %v", date.Unix(), sum)
+
+	//date should be the close time from yesterday - but how to get it??
+	s := fmt.Sprintf("%v, %v", time.Now().Unix(), sum)
 	fmt.Fprintln(f, s)
 }
 
