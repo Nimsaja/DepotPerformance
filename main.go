@@ -149,8 +149,10 @@ func store(ch chan float32) {
 		sum += v
 	}
 
-	//date should be the close time from yesterday - but how to get it??
-	s := fmt.Sprintf("%v, %v", time.Now().Unix(), sum)
+	//date should be the close time from yesterday - say 23:59
+	d := time.Now().Add(time.Duration(-1) * time.Hour * 24)
+	d = time.Date(d.Year(), d.Month(), d.Day(), 23, 59, 0, 0, time.UTC)
+	s := fmt.Sprintf("%v, %v", d.Unix(), sum)
 	fmt.Fprintln(f, s)
 }
 
