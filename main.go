@@ -2,11 +2,8 @@ package main
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -21,13 +18,12 @@ import (
 	"gonum.org/v1/plot/vg"
 )
 
-var url = "https://query1.finance.yahoo.com/v7/finance/quote?lang=en-US&region=US&corsDomain=finance.yahoo.com&symbols="
 var path = "stocksData.txt"
 
 func main() {
 	//declaration of channel
-	quotesYesterdayChan := make(chan float32, len(depot.Get()))
-	quotesTodayChan := make(chan float32, len(depot.Get()))
+	quotesYesterday := make(chan float32, len(depot.Get()))
+	quotesToday := make(chan float32, len(depot.Get()))
 
 	start := time.Now()
 
@@ -41,9 +37,9 @@ func main() {
 			//will be called after this func is done, no matter where
 			defer wg.Done()
 
-			v := getQuote(s)
-			quotesYesterdayChan <- v.Close * s.Count
-			quotesTodayChan <- v.Price * s.Count
+			v := yahoo.Get(s)
+			quotesYesterday <- v.Close * s.Count
+			quotesToday <- v.Price * s.Count
 		}(s)
 	}
 
@@ -51,11 +47,11 @@ func main() {
 	wg.Wait()
 	fmt.Println("Elapsed Time ", time.Now().Sub(start))
 
-	close(quotesYesterdayChan)
-	close(quotesTodayChan)
+	close(quotesYesterday)
+	close(quotesToday)
 
-	store(quotesYesterdayChan)
-	createGraph(quotesTodayChan)
+	store(quotesYesterday)
+	createGraph(quotesToday)
 }
 
 func createGraph(ch chan float32) {
@@ -177,41 +173,4 @@ func store(ch chan float32) {
 	fmt.Fprintln(f, s)
 
 	f.Close()
-}
-
-func getQuote(s depot.Stock) (result yahoo.Result) {
-	res := yahoo.Result{}
-
-	u := fmt.Sprintf(url+"%v", s.Symbol)
-
-	resp, err := http.Get(u)
-	if err != nil {
-		log.Printf("Error %v ", err)
-		return res
-	}
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Printf("Error reading body: %v", err)
-		return res
-	}
-
-	// n := len(body)
-	// txt := string(body[:n])
-
-	// fmt.Println("Result for ", s.Name, "is ", txt)
-
-	out := yahoo.QuoteResponse{}
-	err = json.Unmarshal(body, &out)
-	if err != nil {
-		log.Println(err.Error())
-		return
-	}
-
-	if len(out.QR.Res) > 0 {
-		res = out.QR.Res[0]
-	}
-
-	return res
 }
