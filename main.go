@@ -26,7 +26,8 @@ var path = "stocksData.txt"
 
 func main() {
 	//declaration of channel
-	quotesChan := make(chan float32, len(depot.Get()))
+	quotesYesterdayChan := make(chan float32, len(depot.Get()))
+	quotesTodayChan := make(chan float32, len(depot.Get()))
 
 	start := time.Now()
 
@@ -41,7 +42,8 @@ func main() {
 			defer wg.Done()
 
 			v := getQuote(s)
-			quotesChan <- v.Close * s.Count
+			quotesYesterdayChan <- v.Close * s.Count
+			quotesTodayChan <- v.Price * s.Count
 		}(s)
 	}
 
@@ -49,13 +51,14 @@ func main() {
 	wg.Wait()
 	fmt.Println("Elapsed Time ", time.Now().Sub(start))
 
-	close(quotesChan)
+	close(quotesYesterdayChan)
+	close(quotesTodayChan)
 
-	store(quotesChan)
-	createGraph()
+	store(quotesYesterdayChan)
+	createGraph(quotesTodayChan)
 }
 
-func createGraph() {
+func createGraph(ch chan float32) {
 	//read in file
 	f, err := os.OpenFile(path, os.O_RDONLY, 0600)
 	if err != nil {
@@ -89,6 +92,14 @@ func createGraph() {
 
 		ay = append(ay, float32(v))
 	}
+
+	//todays values
+	var sum float32
+	for value := range ch {
+		sum += value
+	}
+	ax = append(ax, int(time.Now().Unix()))
+	ay = append(ay, float32(sum))
 
 	//create plot
 	xticks := plot.TimeTicks{Format: "2006-01-02\n15:04"}
