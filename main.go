@@ -60,15 +60,15 @@ func main() {
 
 func createGraph(ch chan float32) {
 	//read in file
-	f, err := os.OpenFile(path, os.O_RDONLY, 0600)
+	f, err := os.OpenFile(path, os.O_RDWR, 0600)
 	if err != nil {
 		panic(err)
 	}
 
 	defer f.Close()
 
-	ax := make([]int, 0)
-	ay := make([]float32, 0)
+	at := make([]int, 0)
+	av := make([]float32, 0)
 	var s []string
 	var v float64
 	scanner := bufio.NewScanner(f)
@@ -82,7 +82,7 @@ func createGraph(ch chan float32) {
 			fmt.Println("Error parsing time ", err)
 		}
 
-		ax = append(ax, t)
+		at = append(at, t)
 
 		//get value
 		v, err = strconv.ParseFloat(s[1], 32)
@@ -90,8 +90,27 @@ func createGraph(ch chan float32) {
 			panic(err)
 		}
 
-		ay = append(ay, float32(v))
+		av = append(av, float32(v))
 	}
+
+	//remove duplicated times in file - can be removed as soon as storing values is automatically called once a day
+	ax := make([]int, 0)
+	ay := make([]float32, 0)
+	var prevTime int
+	var txt string
+	for i, t := range at {
+		if prevTime != t {
+			ax = append(ax, t)
+			ay = append(ay, av[i])
+
+			txt = fmt.Sprintf("%v, %v", t, v)
+			fmt.Fprintln(f, txt)
+
+			prevTime = t
+		}
+	}
+
+	fmt.Println("Arrays ", ax, " / ", ay)
 
 	//todays values
 	var sum float32
@@ -131,6 +150,8 @@ func createGraph(ch chan float32) {
 	}
 
 	fmt.Println("\n*****Please open DepotPerformance.png********")
+
+	f.Close()
 }
 
 func store(ch chan float32) {
@@ -154,6 +175,8 @@ func store(ch chan float32) {
 	d = time.Date(d.Year(), d.Month(), d.Day(), 23, 59, 0, 0, time.UTC)
 	s := fmt.Sprintf("%v, %v", d.Unix(), sum)
 	fmt.Fprintln(f, s)
+
+	f.Close()
 }
 
 func getQuote(s depot.Stock) (result yahoo.Result) {
