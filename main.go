@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"math/rand"
 	"net/http"
 	"os"
 	"strconv"
@@ -24,12 +23,12 @@ import (
 
 var url = "https://query1.finance.yahoo.com/v7/finance/quote?lang=en-US&region=US&corsDomain=finance.yahoo.com&symbols="
 var euro float32
-var quotes []float32
 var date time.Time
 var path = "stocksData.txt"
 
 func main() {
-	quotes = make([]float32, 0)
+	//declaration of channel
+	quotesChan := make(chan float32, len(depot.Get()))
 
 	start := time.Now()
 
@@ -42,12 +41,10 @@ func main() {
 		go func(s depot.Stock) {
 			//will be called after this func is done, no matter where
 			defer wg.Done()
+
 			v := getQuote(s)
+			quotesChan <- v.Close * s.Count
 
-			// fmt.Printf("Result for %v is %v\n", s.Name, v)
-
-			//Want to sum here - race condition?!?
-			quotes = append(quotes, v.Close*s.Count)
 			date = time.Unix(v.Time, 0)
 		}(s)
 	}
@@ -56,7 +53,9 @@ func main() {
 	wg.Wait()
 	fmt.Println("Elapsed Time ", time.Now().Sub(start))
 
-	store()
+	close(quotesChan)
+
+	store(quotesChan)
 	createGraph()
 }
 
@@ -77,21 +76,16 @@ func createGraph() {
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		b := scanner.Text()
-		fmt.Println(b)
-
 		s = strings.Split(b, ", ")
 		v, err = strconv.ParseFloat(s[1], 32)
 		if err != nil {
 			panic(err)
 		}
 
-		fmt.Println(v)
-
 		t, err := strconv.Atoi(s[0])
 		if err != nil {
 			fmt.Println("Error parsing time ", err)
 		}
-		fmt.Println("Time: ", t)
 
 		ax = append(ax, t)
 		ay = append(ay, float32(v))
@@ -123,9 +117,6 @@ func createGraph() {
 		panic(err)
 	}
 
-	//create x Axis
-	fmt.Println(ax)
-
 	// Save the plot to a PNG file.
 	if err := p.Save(10*vg.Inch, 4*vg.Inch, "DepotPerformance.png"); err != nil {
 		panic(err)
@@ -134,15 +125,7 @@ func createGraph() {
 	fmt.Println("\n*****Please open DepotPerformance.png********")
 }
 
-func store() {
-	dummy := false
-	var s string
-
-	//create some dummy values if file does not exists
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		dummy = true
-	}
-
+func store(ch chan float32) {
 	//append to output file
 	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
@@ -152,30 +135,13 @@ func store() {
 
 	defer f.Close()
 
-	//TODO remove this later!!!!!!
-	var t time.Time
-	var n float64
-	if dummy {
-		for i := 30; i > 0; i-- {
-			t = date.Add(time.Duration(-i) * time.Hour * 24)
-			n = (rand.Float64() * 500) + 3000
-			s = fmt.Sprintf("%v, %v", t.Unix(), n)
-			fmt.Fprintln(f, s)
-		}
+	//output of channel - sum up
+	var sum float32
+	for v := range ch {
+		sum += v
 	}
-
-	s = fmt.Sprintf("%v, %v", date.Unix(), sum(quotes))
+	s := fmt.Sprintf("%v, %v", date.Unix(), sum)
 	fmt.Fprintln(f, s)
-}
-
-func sum(input []float32) float32 {
-	sum := float32(0.0)
-
-	for i := range input {
-		sum += input[i]
-	}
-
-	return sum
 }
 
 func getQuote(s depot.Stock) (result yahoo.Result) {
