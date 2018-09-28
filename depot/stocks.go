@@ -22,3 +22,12 @@ func Get() []Stock {
 		Stock{Name: "Oekoworld", Symbol: "OE7A.F", Count: 0.523, Buy: 191.051},
 	}
 }
+
+//SumBuy gets the sum of spended money
+func SumBuy() float32 {
+	var sum float32
+	for _, s := range Get() {
+		sum += s.Buy * s.Count
+	}
+	return sum
+}
