@@ -1,24 +1,22 @@
 package main
 
 import (
-	"encoding/csv"
 	"fmt"
-	"log"
-	"net/http"
-	"strconv"
 	"sync"
 	"time"
 
+	"github.com/Nimsaja/DepotPerformance/store"
+
 	"github.com/Nimsaja/DepotPerformance/depot"
+	"github.com/Nimsaja/DepotPerformance/yahoo"
 )
 
-var url = "http://markets.financialcontent.com/stocks/action/gethistoricaldata?"
-var euro float32
-
 func main() {
-	start := time.Now()
+	//declaration of channel
+	quotesYesterday := make(chan float32, len(depot.Get()))
+	quotesToday := make(chan float32, len(depot.Get()))
 
-	euro, _ = getClose(depot.Stock{Symbol: "USD-EUR", Count: 1})
+	start := time.Now()
 
 	//to check for raceconditions -> go run -race main.go
 	//to check if every go routine is done
@@ -29,62 +27,20 @@ func main() {
 		go func(s depot.Stock) {
 			//will be called after this func is done, no matter where
 			defer wg.Done()
-			v, d := getClose(s)
-			fmt.Printf("Value for %v on %v is %v Euro\n", s.Name, d, s.AsEuro(v, euro))
+
+			v := yahoo.Get(s)
+			quotesYesterday <- v.Close * s.Count
+			quotesToday <- v.Price * s.Count
 		}(s)
 	}
 
 	//here we wait for all the go routines to be done
 	wg.Wait()
 	fmt.Println("Elapsed Time ", time.Now().Sub(start))
-}
 
-func getClose(s depot.Stock) (value float32, date string) {
-	// m := 8 //start month
-	sy := s.Symbol
-	r := 1 //how many month
-	y := 2018
+	close(quotesYesterday)
+	close(quotesToday)
 
-	// u := fmt.Sprintf(url+"Month=%v&Symbol=%v&Range=%v&Year=%v", m, sy, r, y)
-	u := fmt.Sprintf(url+"Symbol=%v&Range=%v&Year=%v", sy, r, y)
-
-	resp, err := http.Get(u)
-	if err != nil {
-		log.Printf("Error %v ", err)
-		return 0, ""
-	}
-	defer resp.Body.Close()
-
-	// var lineCount = 0
-	reader := csv.NewReader(resp.Body)
-
-	// for {
-	// 	record, err := reader.Read()
-	// 	// end-of-file is fitted into err
-	// 	if err == io.EOF {
-	// 		break
-	// 	} else if err != nil {
-	// 		fmt.Println("Error:", err)
-	// 		return 0
-	// 	}
-	// 	fmt.Println(lineCount, " -> ", record)
-	// 	lineCount++
-	// }
-
-	//skip first line
-	line, err := reader.Read()
-	line, err = reader.Read()
-
-	if len(line) < 5 {
-		log.Println("Can not find stock values for ", s.Name)
-		return 0, ""
-	}
-
-	f, err := strconv.ParseFloat(line[5], 32)
-	if err != nil {
-		log.Printf("Error %v ", err)
-		return 0, ""
-	}
-
-	return float32(f) * s.Count, line[1]
+	store.File(quotesYesterday)
+	store.CreateGraph(quotesToday)
 }
