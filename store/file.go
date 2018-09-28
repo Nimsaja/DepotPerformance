@@ -82,17 +82,18 @@ func CreateGraph(ch chan float32) {
 	//remove duplicated times in file - can be removed as soon as storing values is automatically called once a day
 	ax := make([]int, 0)
 	ay := make([]float32, 0)
-	var prevTime int
+	prevTimes := make(map[int]struct{})
 	var txt string
 	for i, t := range at {
-		if prevTime != t {
+		_, exists := prevTimes[t]
+		if !exists {
 			ax = append(ax, t)
 			ay = append(ay, av[i])
 
 			txt = fmt.Sprintf("%v, %v", t, v)
 			fmt.Fprintln(f, txt)
 
-			prevTime = t
+			prevTimes[t] = struct{}{}
 		}
 	}
 
