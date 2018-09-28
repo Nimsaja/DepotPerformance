@@ -1,6 +1,10 @@
 package yahoo
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/Nimsaja/DepotPerformance/depot"
+)
 
 func TestConvertJSON2ResultIfResultArrayIsEmpty(t *testing.T) {
 	b := []byte(`{"quoteResponse":{"result":[],"error":null}}`)
@@ -28,5 +32,18 @@ func TestConvertJSON2ResultIfStockIsFound(t *testing.T) {
 
 	if r.Price != 1199.89 {
 		t.Errorf("Expected %v, got %v", 1199.89, r.Price)
+	}
+}
+
+func TestGet(t *testing.T) {
+	s := depot.Stock{Name: "Google", Symbol: "ABEC.DE"}
+
+	r := Get(s)
+
+	if r.Name != "Alphabet Inc." {
+		t.Errorf("Name of stock should be %v. Got %v.", "Alphabet Inc.", r.Name)
+	}
+	if r.Cur != "EUR" {
+		t.Errorf("Currency of stock should be %v. Got %v.", "EUR", r.Cur)
 	}
 }
