@@ -35,8 +35,8 @@ func main() {
 			quotesYesterday <- c
 			quotesToday <- p
 
-			fmt.Println(s.Name, ": ", c, " -> ", p)
-			fmt.Println(s.Name, ": ", c-s.Buy*s.Count, " -> ", p-s.Buy*s.Count)
+			// fmt.Println(s.Name, ": ", c, " -> ", p)
+			// fmt.Println(s.Name, ": ", c-s.Buy*s.Count, " -> ", p-s.Buy*s.Count)
 		}(s)
 	}
 

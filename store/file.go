@@ -156,7 +156,7 @@ func CreateGraph(ch chan float32) {
 		ptsd[i].X = float64(ax[i])
 		ptsd[i].Y = float64(v - depot.SumBuy())
 
-		fmt.Printf("Plot: t=%v, v=%v, diff=%v\n", ax[i], v, v-depot.SumBuy())
+		fmt.Printf("Plot: t=%v, v=%v, diff=%v\n", time.Unix(int64(ax[i]), 0), v, v-depot.SumBuy())
 	}
 
 	err = plotutil.AddLinePoints(pd, ptsd)
