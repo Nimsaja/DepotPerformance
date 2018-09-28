@@ -40,8 +40,6 @@ func File(ch chan float32) {
 	d = time.Date(d.Year(), d.Month(), d.Day(), 23, 59, 0, 0, time.UTC)
 	s := fmt.Sprintf("%v, %v", d.Unix(), sum)
 	fmt.Fprintln(f, s)
-
-	f.Close()
 }
 
 //CreateGraph create Graph to show the depot value over time
@@ -80,19 +78,15 @@ func CreateGraph(ch chan float32) {
 		av = append(av, float32(v))
 	}
 
-	//remove duplicated times in file - can be removed as soon as storing values is automatically called once a day
+	//remove duplicated times in array - can be removed as soon as storing values is automatically called once a day
 	ax := make([]int, 0)
 	ay := make([]float32, 0)
 	prevTimes := make(map[int]struct{})
-	var txt string
 	for i, t := range at {
 		_, exists := prevTimes[t]
 		if !exists {
 			ax = append(ax, t)
 			ay = append(ay, av[i])
-
-			txt = fmt.Sprintf("%v, %v", t, v)
-			fmt.Fprintln(f, txt)
 
 			prevTimes[t] = struct{}{}
 		}
