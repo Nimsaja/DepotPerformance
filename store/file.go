@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Nimsaja/DepotPerformance/depot"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/plotutil"
@@ -82,17 +83,18 @@ func CreateGraph(ch chan float32) {
 	//remove duplicated times in file - can be removed as soon as storing values is automatically called once a day
 	ax := make([]int, 0)
 	ay := make([]float32, 0)
-	var prevTime int
+	prevTimes := make(map[int]struct{})
 	var txt string
 	for i, t := range at {
-		if prevTime != t {
+		_, exists := prevTimes[t]
+		if !exists {
 			ax = append(ax, t)
 			ay = append(ay, av[i])
 
 			txt = fmt.Sprintf("%v, %v", t, v)
 			fmt.Fprintln(f, txt)
 
-			prevTime = t
+			prevTimes[t] = struct{}{}
 		}
 	}
 
@@ -106,9 +108,10 @@ func CreateGraph(ch chan float32) {
 	ax = append(ax, int(time.Now().Unix()))
 	ay = append(ay, float32(sum))
 
-	//create plot
+	//create plots
 	xticks := plot.TimeTicks{Format: "2006-01-02\n15:04"}
 
+	//amount of depot
 	p, err := plot.New()
 	if err != nil {
 		panic(err)
@@ -136,6 +139,37 @@ func CreateGraph(ch chan float32) {
 	}
 
 	fmt.Println("\n*****Please open DepotPerformance.png********")
+
+	//diff of depot
+	pd, err := plot.New()
+	if err != nil {
+		panic(err)
+	}
+
+	pd.Title.Text = "Depot Diff"
+	pd.X.Label.Text = "Date"
+	pd.Y.Label.Text = "Value"
+	pd.X.Tick.Marker = xticks
+
+	ptsd := make(plotter.XYs, len(ay))
+	for i, v := range ay {
+		ptsd[i].X = float64(ax[i])
+		ptsd[i].Y = float64(v - depot.SumBuy())
+
+		fmt.Printf("Plot: t=%v, v=%v, diff=%v\n", time.Unix(int64(ax[i]), 0), v, v-depot.SumBuy())
+	}
+
+	err = plotutil.AddLinePoints(pd, ptsd)
+	if err != nil {
+		panic(err)
+	}
+
+	// Save the plot to a PNG file.
+	if err := pd.Save(10*vg.Inch, 4*vg.Inch, "DepotDiff.png"); err != nil {
+		panic(err)
+	}
+
+	fmt.Println("\n*****Please open DepotDiff.png********")
 
 	f.Close()
 }

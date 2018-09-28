@@ -29,8 +29,14 @@ func main() {
 			defer wg.Done()
 
 			v := yahoo.Get(s)
-			quotesYesterday <- v.Close * s.Count
-			quotesToday <- v.Price * s.Count
+
+			c := v.Close * s.Count
+			p := v.Price * s.Count
+			quotesYesterday <- c
+			quotesToday <- p
+
+			// fmt.Println(s.Name, ": ", c, " -> ", p)
+			// fmt.Println(s.Name, ": ", c-s.Buy*s.Count, " -> ", p-s.Buy*s.Count)
 		}(s)
 	}
 
