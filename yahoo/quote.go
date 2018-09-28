@@ -14,8 +14,6 @@ var url = "https://query1.finance.yahoo.com/v7/finance/quote?lang=en-US&region=U
 
 //Get get quotes
 func Get(s depot.Stock) (result Result) {
-	// res := yahoo.Result{}
-
 	u := fmt.Sprintf(url+"%v", s.Symbol)
 
 	resp, err := http.Get(u)

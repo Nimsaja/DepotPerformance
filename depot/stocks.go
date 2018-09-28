@@ -1,9 +1,5 @@
 package depot
 
-import (
-	"fmt"
-)
-
 //Stock structure
 type Stock struct {
 	Name   string
@@ -39,7 +35,6 @@ func Get() []Stock {
 
 //SumBuy gets the sum of spended money
 func SumBuy() float32 {
-	fmt.Println(len(Get()))
 	var sum float32
 	for _, s := range Get() {
 		sum += s.Buy * s.Count
