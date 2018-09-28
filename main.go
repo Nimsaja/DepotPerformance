@@ -12,6 +12,9 @@ import (
 )
 
 func main() {
+	//If some day I have a client which can add stocks, this is not necessary anymore
+	depot.InitializeWithDefaultStocks()
+
 	//declaration of channel
 	quotesYesterday := make(chan float32, len(depot.Get()))
 	quotesToday := make(chan float32, len(depot.Get()))
