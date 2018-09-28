@@ -41,8 +41,10 @@ func New(cap int) *StockValueList {
 }
 
 // Add a stock value to channel
-func (svl *StockValueList) Add(sv StockValue) {
-	svl.svl <- sv
+func (svl *StockValueList) Add(sv ...StockValue) {
+	for _, el := range sv {
+		svl.svl <- el
+	}
 }
 
 // Done counter for get stock values are done
