@@ -1,16 +1,15 @@
-package main
+package yahoo
 
 import (
 	"fmt"
 	"time"
 
-	"github.com/Nimsaja/DepotPerformance/store"
-
 	"github.com/Nimsaja/DepotPerformance/depot"
-	"github.com/Nimsaja/DepotPerformance/yahoo"
+	"github.com/Nimsaja/DepotPerformance/store"
 )
 
-func main() {
+//Run get Yahoo values, store and calculate the values
+func Run() {
 	//If some day I have a client which can add stocks, this is not necessary anymore
 	depot.InitializeWithDefaultStocks()
 
@@ -21,7 +20,7 @@ func main() {
 		go func(s depot.Stock) {
 			defer svl.Done()
 
-			v := yahoo.Get(s)
+			v := Get(s)
 			svl.Add(depot.StockValue{Close: v.Close, Price: v.Price, Stock: s})
 		}(s)
 	}

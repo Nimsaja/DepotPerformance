@@ -16,7 +16,16 @@ import (
 	"gonum.org/v1/plot/vg"
 )
 
+//Quotes structure for transferring the values to the client
+type Quotes struct {
+	Times  []time.Time `json:"times"`
+	Values []float32   `json:"values"`
+	Diff   []float32   `json:"diff"`
+}
+
 const path = "stocksData.txt"
+
+var expQuotes Quotes
 
 //File store channel inputs to file
 func File(v float32) {
@@ -106,10 +115,19 @@ func CreateGraph(val float32) {
 	p.Y.Label.Text = "Value"
 	p.X.Tick.Marker = xticks
 
+	expQuotes.Times = make([]time.Time, len(ax))
+	expQuotes.Values = make([]float32, len(ay))
+	expQuotes.Diff = make([]float32, len(ay))
+
 	pts := make(plotter.XYs, len(ay))
 	for i, v := range ay {
 		pts[i].X = float64(ax[i])
 		pts[i].Y = float64(v)
+
+		//fill quotes array
+		expQuotes.Times[i] = time.Unix(int64(ax[i]), 0)
+		expQuotes.Values[i] = v
+		expQuotes.Diff[i] = v - depot.SumBuy()
 	}
 
 	err = plotutil.AddLinePoints(p, pts)
@@ -138,7 +156,7 @@ func CreateGraph(val float32) {
 	ptsd := make(plotter.XYs, len(ay))
 	for i, v := range ay {
 		ptsd[i].X = float64(ax[i])
-		ptsd[i].Y = float64(v - depot.SumBuy())
+		ptsd[i].Y = float64(expQuotes.Diff[i])
 
 		fmt.Printf("Plot: t=%v, v=%v, diff=%v\n", time.Unix(int64(ax[i]), 0), v, v-depot.SumBuy())
 	}
@@ -156,4 +174,9 @@ func CreateGraph(val float32) {
 	fmt.Println("\n*****Please open DepotDiff.png********")
 
 	f.Close()
+}
+
+//Get gets the quotes to export to the client
+func Get() Quotes {
+	return expQuotes
 }
