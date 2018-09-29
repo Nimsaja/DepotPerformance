@@ -19,7 +19,7 @@ import (
 const path = "stocksData.txt"
 
 //File store channel inputs to file
-func File(ch chan float32) {
+func File(v float32) {
 	//append to output file
 	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
@@ -29,21 +29,15 @@ func File(ch chan float32) {
 
 	defer f.Close()
 
-	//output of channel - sum up
-	var sum float32
-	for v := range ch {
-		sum += v
-	}
-
 	//date should be the close time from yesterday - say 23:59
 	d := time.Now().Add(time.Duration(-1) * time.Hour * 24)
 	d = time.Date(d.Year(), d.Month(), d.Day(), 23, 59, 0, 0, time.UTC)
-	s := fmt.Sprintf("%v, %v", d.Unix(), sum)
+	s := fmt.Sprintf("%v, %v", d.Unix(), v)
 	fmt.Fprintln(f, s)
 }
 
 //CreateGraph create Graph to show the depot value over time
-func CreateGraph(ch chan float32) {
+func CreateGraph(val float32) {
 	//read in file
 	f, err := os.OpenFile(path, os.O_RDWR, 0600)
 	if err != nil {
@@ -94,13 +88,9 @@ func CreateGraph(ch chan float32) {
 
 	fmt.Println("Arrays ", ax, " / ", ay)
 
-	//todays values
-	var sum float32
-	for value := range ch {
-		sum += value
-	}
+	//add todays sum
 	ax = append(ax, int(time.Now().Unix()))
-	ay = append(ay, float32(sum))
+	ay = append(ay, val)
 
 	//create plots
 	xticks := plot.TimeTicks{Format: "2006-01-02\n15:04"}
